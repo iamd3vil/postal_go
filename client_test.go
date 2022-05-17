@@ -28,7 +28,7 @@ func TestSend(t *testing.T) {
 		Subject:   "Test Email",
 		PlainBody: "Test Email from postal_go",
 	}
-	if _, err := msg.AttachFile("test/hello.txt"); err != nil {
+	if err := msg.AttachFile("test/hello.txt"); err != nil {
 		t.Fatalf("error attaching file: %s", err)
 	}
 

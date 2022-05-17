@@ -25,27 +25,32 @@ const (
 	contentEncBase64           = "base64"
 )
 
+// Message is the email which needs to be sent.
 type Message struct {
-	To          []string
-	From        string
-	Sender      string
-	Subject     string
-	ReplyTo     []string
-	Cc          []string
-	Bcc         []string
-	PlainBody   string
-	HTMLBody    string
-	Headers     textproto.MIMEHeader
-	Attachments []Attachment
+	To        []string
+	From      string
+	Sender    string
+	Subject   string
+	ReplyTo   []string
+	Cc        []string
+	Bcc       []string
+	PlainBody string
+	HTMLBody  string
+	Headers   textproto.MIMEHeader
+
+	// Attachments
+	attachments []attachment
 }
 
-func (m *Message) Attach(r io.Reader, filename string, contentType string) (Attachment, error) {
+// Attach creates an attachment in the message.
+// `headers` is optional. If given, it will add the headers to the attachment.
+func (m *Message) Attach(r io.Reader, filename string, contentType string, headers textproto.MIMEHeader) error {
 	var buffer bytes.Buffer
 	if _, err := io.Copy(&buffer, r); err != nil {
-		return Attachment{}, err
+		return err
 	}
 
-	at := Attachment{
+	at := attachment{
 		Filename: filename,
 		Header:   textproto.MIMEHeader{},
 		Content:  buffer.Bytes(),
@@ -60,23 +65,32 @@ func (m *Message) Attach(r io.Reader, filename string, contentType string) (Atta
 	at.Header.Set(HdrContentDisposition, fmt.Sprintf("attachment;\r\n filename=\"%s\"", filename))
 	at.Header.Set(HdrContentID, fmt.Sprintf("<%s>", filename))
 	at.Header.Set(HdrContentTransferEncoding, contentEncBase64)
-	m.Attachments = append(m.Attachments, at)
-	return at, nil
+
+	for key, val := range headers {
+		for _, v := range val {
+			at.Header.Set(key, v)
+		}
+	}
+
+	m.attachments = append(m.attachments, at)
+	return nil
 }
 
-func (m *Message) AttachFile(filename string) (Attachment, error) {
+// AttachFile attaches given file to the message.
+// This is a wrapper over Attach function.
+func (m *Message) AttachFile(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		return Attachment{}, err
+		return err
 	}
 	defer f.Close()
 
 	ct := mime.TypeByExtension(filepath.Ext(filename))
 	basename := filepath.Base(filename)
-	return m.Attach(f, basename, ct)
+	return m.Attach(f, basename, ct, nil)
 }
 
-type Attachment struct {
+type attachment struct {
 	Filename    string
 	Header      textproto.MIMEHeader
 	Content     []byte
@@ -106,6 +120,7 @@ type response struct {
 	Data   Response `json:"data"`
 }
 
+// Client is the client for postal.
 type Client interface {
 	SendMessage(Message) (Response, error)
 }
@@ -116,6 +131,7 @@ type apiClient struct {
 	httpClient *http.Client
 }
 
+// NewAPIClient returns a postal client which uses the API.
 func NewAPIClient(url, token string, httpClient *http.Client) (Client, error) {
 	return &apiClient{
 		baseURI:    url,
@@ -124,9 +140,10 @@ func NewAPIClient(url, token string, httpClient *http.Client) (Client, error) {
 	}, nil
 }
 
+// SendMessage sends the given message to postal.
 func (a *apiClient) SendMessage(msg Message) (Response, error) {
-	attachments := make([]smtppool.Attachment, 0, len(msg.Attachments))
-	for _, ac := range msg.Attachments {
+	attachments := make([]smtppool.Attachment, 0, len(msg.attachments))
+	for _, ac := range msg.attachments {
 		attachments = append(attachments, smtppool.Attachment{
 			Filename:    ac.Filename,
 			Header:      ac.Header,
