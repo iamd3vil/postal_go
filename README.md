@@ -1,3 +1,5 @@
+<a href="https://zerodha.tech"><img src="https://zerodha.tech/static/images/github-badge.svg" align="right" /></a>
+
 # Postal-Go
 
 This is a client library for [Postal](https://github.com/postalserver/postal).
