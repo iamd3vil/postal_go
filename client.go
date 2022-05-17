@@ -125,7 +125,7 @@ type Client interface {
 	SendMessage(Message) (Response, error)
 }
 
-type apiClient struct {
+type ApiClient struct {
 	baseURI    string
 	token      string
 	httpClient *http.Client
@@ -133,7 +133,7 @@ type apiClient struct {
 
 // NewAPIClient returns a postal client which uses the API.
 func NewAPIClient(url, token string, httpClient *http.Client) (Client, error) {
-	return &apiClient{
+	return &ApiClient{
 		baseURI:    url,
 		token:      token,
 		httpClient: httpClient,
@@ -141,7 +141,7 @@ func NewAPIClient(url, token string, httpClient *http.Client) (Client, error) {
 }
 
 // SendMessage sends the given message to postal.
-func (a *apiClient) SendMessage(msg Message) (Response, error) {
+func (a *ApiClient) SendMessage(msg Message) (Response, error) {
 	attachments := make([]smtppool.Attachment, 0, len(msg.attachments))
 	for _, ac := range msg.attachments {
 		attachments = append(attachments, smtppool.Attachment{
