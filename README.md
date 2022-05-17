@@ -2,7 +2,7 @@
 
 # Postal-Go
 
-This is a client library for [Postal](https://github.com/postalserver/postal).
+This is a client library for sending emails through [Postal](https://github.com/postalserver/postal).
 
 Uses the [Send a raw RFC2882 message](http://apiv1.postalserver.io/controllers/send/raw) api.
 
